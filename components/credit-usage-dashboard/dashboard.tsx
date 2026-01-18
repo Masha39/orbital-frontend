@@ -90,7 +90,7 @@ export function CreditUsageDashboard() {
         </Card>
       </div>
 
-      <Card className="border-border/50 bg-card/50 backdrop-blur">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="space-y-1">
             <CardTitle className="text-base font-medium">Usage Over Time</CardTitle>
