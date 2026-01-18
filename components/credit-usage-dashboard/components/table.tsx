@@ -1,20 +1,7 @@
 import type { UsageItem } from "@/lib/usage-data"
+import { formatDate } from "@/utils/format-date"
 
-interface CreditUsageTableProps {
-  data: UsageItem[]
-}
-
-export function CreditUsageTable({ data }: CreditUsageTableProps) {
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
+export function CreditUsageTable({ data }: { data: UsageItem[] }) {
   return (
     <div className="overflow-auto rounded-lg border border-border/50">
       <table className="w-full text-sm">

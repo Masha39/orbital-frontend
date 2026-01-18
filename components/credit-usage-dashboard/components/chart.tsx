@@ -1,25 +1,57 @@
 "use client"
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import type { UsageItem } from "@/lib/usage-data"
+import { formatDate } from "@/utils/format-date"
+import { useMemo } from "react"
 
-export function CreditUsageChart({ data }: { data: UsageItem[] }) {
-  const chartData = data.map((item) => ({
-    messageId: item.message_id,
-    creditsUsed: item.credits_used,
-    reportName: item.report_name || "N/A",
-    timestamp: item.timestamp,
-  })).slice(0, 10)
+type TimeRange = "1d" | "3d" | "7d"
 
-  // TODO: create a util fn 
-  const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+export function CreditUsageChart({ data, timeRange, setTimeRange }: { data: UsageItem[], timeRange: TimeRange, setTimeRange: (timeRange: TimeRange) => void }) {
+  const { chartData, xAxisTicks } = useMemo(() => {
+    if (!data || data.length === 0) return { chartData: [], xAxisTicks: [] }
+
+    const sortedData = [...data].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+
+    const mostRecentDate = new Date(sortedData[0].timestamp)
+    
+    // Calculate days to filter
+    const daysAgo = timeRange === "1d" ? 1 : timeRange === "3d" ? 3 : timeRange === "7d" ? 7 : 0 
+    const cutoffDate = new Date(mostRecentDate.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+
+    const filtered = sortedData.filter((item) => {
+      const itemDate = new Date(item.timestamp)
+      return itemDate >= cutoffDate
     })
-  }
+
+    const mapped = filtered
+      .reverse()
+      .map((item) => ({
+        messageId: item.message_id,
+        creditsUsed: item.credits_used,
+        reportName: item.report_name || "N/A",
+        timestamp: item.timestamp,
+      }))
+
+    let ticks: string[] = []
+    if (mapped.length > 0) {
+      const desiredTickCount = Math.min(5, Math.max(4, mapped.length))
+      
+      if (mapped.length <= desiredTickCount) {
+        ticks = mapped.map(item => item.timestamp)
+      } else {
+        const step = (mapped.length - 1) / (desiredTickCount - 1)
+        ticks = []
+        for (let i = 0; i < desiredTickCount; i++) {
+          const index = Math.round(i * step)
+          ticks.push(mapped[index].timestamp)
+        }
+      }
+    }
+
+    return { chartData: mapped, xAxisTicks: ticks }
+  }, [data, timeRange])
 
   return (
     <div className="h-[300px] w-full">
@@ -32,6 +64,7 @@ export function CreditUsageChart({ data }: { data: UsageItem[] }) {
             axisLine={false}
             fontSize={12}
             tickFormatter={(value) => formatDate(value)}
+            ticks={xAxisTicks}
           />
           <YAxis tickLine={false} axisLine={false} fontSize={12} />
           <Tooltip

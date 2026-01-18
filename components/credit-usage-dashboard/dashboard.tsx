@@ -4,8 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreditUsageChart } from "./components/chart"
 import { CreditUsageTable } from "./components/table"
 import { useUsageData, type UsageItem } from "@/lib/hooks/use-usage-data"
+import { useState } from "react"
+
+type TimeRange = "1d" | "3d" | "7d"
 
 export function CreditUsageDashboard() {
+  const [timeRange, setTimeRange] = useState<TimeRange>("1d")
+  
   const { data: usageData, isLoading, error } = useUsageData()
 
   if (isLoading) {
@@ -91,9 +96,15 @@ export function CreditUsageDashboard() {
             <CardTitle className="text-base font-medium">Usage Over Time</CardTitle>
             <CardDescription className="text-xs">Credit consumption per message</CardDescription>
           </div>
+          
+          <div className="inline-flex items-center rounded-lg bg-muted p-1">
+            <TimeRangeButton timeRange="1d" setTimeRange={setTimeRange} currentTimeRange={timeRange} />
+            <TimeRangeButton timeRange="3d" setTimeRange={setTimeRange} currentTimeRange={timeRange} />
+            <TimeRangeButton timeRange="7d" setTimeRange={setTimeRange} currentTimeRange={timeRange} />
+          </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <CreditUsageChart data={usageData} />
+          <CreditUsageChart data={usageData} timeRange={timeRange} setTimeRange={setTimeRange} />
         </CardContent>
       </Card>
 
@@ -109,3 +120,20 @@ export function CreditUsageDashboard() {
     </div>
   )
 }
+
+
+
+const TimeRangeButton = ({ timeRange, setTimeRange, currentTimeRange }: { timeRange: TimeRange, setTimeRange: (timeRange: TimeRange) => void, currentTimeRange: TimeRange }) => {
+  return (
+    <button
+      onClick={() => setTimeRange(timeRange)}
+      className={`px-3 py-1.5 text-sm font-medium transition-colors rounded-md cursor-pointer ${
+        timeRange === currentTimeRange
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {timeRange}
+    </button>
+  )
+} 
