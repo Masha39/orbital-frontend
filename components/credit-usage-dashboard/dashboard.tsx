@@ -54,7 +54,7 @@ export function CreditUsageDashboard() {
     )
   }
 
-  const totalCredits = usageData.reduce((sum: number, item: UsageItem) => sum + item.credits_used, 0)
+  const totalCredits = usageData.reduce((sum: number, item) => sum + item.credits_used, 0)
   const avgCredits = totalCredits / usageData.length
 
   return (
@@ -85,12 +85,14 @@ export function CreditUsageDashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Credits Used Over Time</CardTitle>
-          <CardDescription>Credit consumption per message</CardDescription>
+      <Card className="border-border/50 bg-card/50 backdrop-blur">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-1">
+            <CardTitle className="text-base font-medium">Usage Over Time</CardTitle>
+            <CardDescription className="text-xs">Credit consumption per message</CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <CreditUsageChart data={usageData} />
         </CardContent>
       </Card>
