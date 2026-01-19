@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef, startTransition } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import type { UsageItem } from "@/hooks/use-usage-data"
+import { useUsageData } from "@/hooks/use-usage-data"
 import { formatDate } from "@/utils/format-date"
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Pagination } from "@/components/ui/pagination"
+import { Spinner } from "@/components/ui/spinner"
 
 const ITEMS_PER_PAGE = 10
 
@@ -24,7 +25,7 @@ const getSortIcon = (sortState: SortState) => {
   return <ArrowUpDown className="ml-1.5 h-3.5 w-3.5 opacity-40" />
 }
 
-export function CreditUsageTable({ data }: { data: UsageItem[] }) {
+export function CreditUsageTable() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isUpdatingRef = useRef(false)
@@ -32,6 +33,25 @@ export function CreditUsageTable({ data }: { data: UsageItem[] }) {
 
   const reportNameSort = (searchParams.get("sort_report") as SortState) || null
   const creditsSort = (searchParams.get("sort_credits") as SortState) || null
+  
+  const sortParams = useMemo(() => {
+    const sortBy: string[] = []
+    const order: string[] = []
+    
+    if (reportNameSort === "asc" || reportNameSort === "desc") {
+      sortBy.push("report_name")
+      order.push(reportNameSort)
+    }
+    
+    if (creditsSort === "asc" || creditsSort === "desc") {
+      sortBy.push("credits_used")
+      order.push(creditsSort)
+    }
+    
+    return sortBy.length > 0 ? { sortBy, order } : undefined
+  }, [reportNameSort, creditsSort])
+  
+  const { data, isFetching } = useUsageData(sortParams)
   
   const urlPage = searchParams.get("page")
   const initialPage = urlPage ? Math.max(1, parseInt(urlPage, 10)) : 1
@@ -60,12 +80,14 @@ export function CreditUsageTable({ data }: { data: UsageItem[] }) {
     const currentSort = column === "report_name" ? reportNameSort : creditsSort
     const nextSort = getNextSortState(currentSort)
     const paramKey = column === "report_name" ? "sort_report" : "sort_credits"
+    const otherParamKey = column === "report_name" ? "sort_credits" : "sort_report"
     
     setCurrentPage(1)
-    updateURL({ [paramKey]: nextSort, page: "1" })
+    // Clear the other column's sort and set the new one
+    updateURL({ [paramKey]: nextSort, [otherParamKey]: null, page: "1" })
   }
 
-  const totalItems = data.length
+  const totalItems = data?.length || 0
   const totalPages = useMemo(() => Math.ceil(totalItems / ITEMS_PER_PAGE), [totalItems])
 
   // Sync page from URL and validate
@@ -89,12 +111,13 @@ export function CreditUsageTable({ data }: { data: UsageItem[] }) {
     }
   }, [searchParams, totalPages, updateURL])
   
-  // Keep ref in sync with state when we update it directly
   useEffect(() => {
     lastSyncedPageRef.current = currentPage
   }, [currentPage])
 
   const paginationData = useMemo(() => {
+    if (!data) return { paginatedData: [], startItem: 0, endItem: 0 }
+    
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
     const endIndex = startIndex + ITEMS_PER_PAGE
     return {
@@ -111,7 +134,12 @@ export function CreditUsageTable({ data }: { data: UsageItem[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-auto rounded-lg border border-border/50">
+      <div className="relative overflow-auto rounded-lg border border-border/50">
+        {isFetching ? (
+          <div className="flex items-center justify-center bg-background/80 backdrop-blur-sm h-[600px]">
+            <Spinner />
+          </div>
+        ) : (
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/50 bg-muted/30">
@@ -144,32 +172,47 @@ export function CreditUsageTable({ data }: { data: UsageItem[] }) {
             </tr>
           </thead>
           <tbody>
-            {paginationData.paginatedData.map((item) => (
-              <tr
-                key={item.message_id}
-                className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0 h-[57px]"
-              >
-                <td className="p-4 font-mono text-xs text-muted-foreground">#{item.message_id}</td>
-                <td className="p-4 text-muted-foreground text-xs">{formatDate(item.timestamp)}</td>
-                <td className="p-4">
-                  {item.report_name ? (
-                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20">
-                      {item.report_name}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/50">—</span>
-                  )}
-                </td>
-                <td className="p-4 text-right font-mono text-sm font-medium tabular-nums">
-                  {item.credits_used.toFixed(2)}
+            {!data ? (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                  Loading...
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            ) : paginationData.paginatedData.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                  No data available
+                </td>
+              </tr>
+            ) : (
+              paginationData.paginatedData.map((item) => (
+                <tr
+                  key={item.message_id}
+                  className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0 h-[57px]"
+                >
+                  <td className="p-4 font-mono text-xs text-muted-foreground">#{item.message_id}</td>
+                  <td className="p-4 text-muted-foreground text-xs">{formatDate(item.timestamp)}</td>
+                  <td className="p-4">
+                    {item.report_name ? (
+                      <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20">
+                        {item.report_name}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-right font-mono text-sm font-medium tabular-nums">
+                    {item.credits_used.toFixed(2)}
+                  </td>
+                </tr>
+              ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 && !isFetching && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

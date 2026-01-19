@@ -3,37 +3,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CreditUsageChart } from "./components/chart"
 import { CreditUsageTable } from "./components/table"
-import { useUsageData, type UsageItem } from "@/hooks/use-usage-data"
-import { useState, useMemo } from "react"
-import { useSearchParams } from "next/navigation"
+import { useUsageData } from "@/hooks/use-usage-data"
+import { useState } from "react"
 import { Spinner } from "@/components/ui/spinner"
 
 type TimeRange = "1d" | "3d" | "7d"
 
 export function CreditUsageDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>("1d")
-  const searchParams = useSearchParams()
   
-  const sortParams = useMemo(() => {
-    const sortBy: string[] = []
-    const order: string[] = []
-    
-    const reportSort = searchParams.get("sort_report")
-    if (reportSort === "asc" || reportSort === "desc") {
-      sortBy.push("report_name")
-      order.push(reportSort)
-    }
-  
-    const creditsSort = searchParams.get("sort_credits")
-    if (creditsSort === "asc" || creditsSort === "desc") {
-      sortBy.push("credits_used")
-      order.push(creditsSort)
-    }
-    
-    return sortBy.length > 0 ? { sortBy, order } : undefined
-  }, [searchParams])
-  
-  const { data: usageData, isLoading, error } = useUsageData(sortParams)
+  // Query for chart and cards
+  const { data: usageData, isLoading, error } = useUsageData()
 
   if (isLoading) {
     return (
@@ -136,7 +116,7 @@ export function CreditUsageDashboard() {
           <CardDescription>Detailed breakdown of credit usage by message</CardDescription>
         </CardHeader>
         <CardContent>
-          <CreditUsageTable data={usageData} />
+          <CreditUsageTable />
         </CardContent>
       </Card>
     </div>
