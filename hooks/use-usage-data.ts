@@ -12,19 +12,17 @@ type UsageResponse = {
 }
 
 type SortParams = {
-  sortBy?: string[]
-  order?: string[]
+  sortBy?: string
+  order?: string
 }
 
 async function fetchUsageData(sortParams?: SortParams): Promise<UsageItem[]> {
   const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/usage`)
   
-  sortParams?.sortBy?.forEach((sortBy, index) => {
-    url.searchParams.append("sort_by", sortBy)
-    if (sortParams.order?.[index]) {
-      url.searchParams.append("order", sortParams.order[index])
-    }
-  })
+  if (sortParams?.sortBy && sortParams.order) {
+    url.searchParams.append("sort_by", sortParams.sortBy)
+    url.searchParams.append("order", sortParams.order)
+  }
   
   const response = await fetch(url.toString())
   if (!response.ok) {

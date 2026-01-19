@@ -35,20 +35,15 @@ export function CreditUsageTable() {
   const creditsSort = (searchParams.get("sort_credits") as SortState) || null
   
   const sortParams = useMemo(() => {
-    const sortBy: string[] = []
-    const order: string[] = []
-    
     if (reportNameSort === "asc" || reportNameSort === "desc") {
-      sortBy.push("report_name")
-      order.push(reportNameSort)
+      return { sortBy: "report_name", order: reportNameSort }
     }
     
     if (creditsSort === "asc" || creditsSort === "desc") {
-      sortBy.push("credits_used")
-      order.push(creditsSort)
+      return { sortBy: "credits_used", order: creditsSort }
     }
     
-    return sortBy.length > 0 ? { sortBy, order } : undefined
+    return undefined
   }, [reportNameSort, creditsSort])
   
   const { data, isFetching } = useUsageData(sortParams)
@@ -90,7 +85,6 @@ export function CreditUsageTable() {
   const totalItems = data?.length || 0
   const totalPages = useMemo(() => Math.ceil(totalItems / ITEMS_PER_PAGE), [totalItems])
 
-  // Sync page from URL and validate
   useEffect(() => {
     if (isUpdatingRef.current) {
       isUpdatingRef.current = false
