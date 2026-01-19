@@ -1,6 +1,6 @@
 "use client"
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
-import type { UsageItem } from "@/lib/usage-data"
+import type { UsageItem } from "@/hooks/use-usage-data"
 import { formatDate } from "@/utils/format-date"
 import { useMemo } from "react"
 
@@ -66,7 +66,7 @@ export function CreditUsageChart({ data, timeRange, setTimeRange }: { data: Usag
             tickFormatter={(value) => formatDate(value)}
             ticks={xAxisTicks}
           />
-          <YAxis tickLine={false} axisLine={false} fontSize={12} />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={(value) => value.toFixed(2)} />
           <Tooltip
             cursor={{ fill: "var(--muted)", opacity: 0.6 }}
             content={({ active, payload }) => {
@@ -76,7 +76,7 @@ export function CreditUsageChart({ data, timeRange, setTimeRange }: { data: Usag
                   <div className="rounded-lg border border-border/50 bg-popover px-3 py-2 shadow-xl">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">Message #{data.messageId}</span>
-                      <span className="text-sm font-semibold text-primary">{data.creditsUsed} credits</span>
+                      <span className="text-sm font-semibold text-primary">{data.creditsUsed.toFixed(2)} credits</span>
                       {data.reportName !== "N/A" && (
                         <span className="text-xs text-muted-foreground">{data.reportName}</span>
                       )}

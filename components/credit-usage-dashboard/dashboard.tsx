@@ -3,15 +3,37 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CreditUsageChart } from "./components/chart"
 import { CreditUsageTable } from "./components/table"
-import { useUsageData, type UsageItem } from "@/lib/hooks/use-usage-data"
-import { useState } from "react"
+import { useUsageData, type UsageItem } from "@/hooks/use-usage-data"
+import { useState, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
+import { Spinner } from "@/components/ui/spinner"
 
 type TimeRange = "1d" | "3d" | "7d"
 
 export function CreditUsageDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>("1d")
+  const searchParams = useSearchParams()
   
-  const { data: usageData, isLoading, error } = useUsageData()
+  const sortParams = useMemo(() => {
+    const sortBy: string[] = []
+    const order: string[] = []
+    
+    const reportSort = searchParams.get("sort_report")
+    if (reportSort === "asc" || reportSort === "desc") {
+      sortBy.push("report_name")
+      order.push(reportSort)
+    }
+  
+    const creditsSort = searchParams.get("sort_credits")
+    if (creditsSort === "asc" || creditsSort === "desc") {
+      sortBy.push("credits_used")
+      order.push(creditsSort)
+    }
+    
+    return sortBy.length > 0 ? { sortBy, order } : undefined
+  }, [searchParams])
+  
+  const { data: usageData, isLoading, error } = useUsageData(sortParams)
 
   if (isLoading) {
     return (
@@ -20,8 +42,8 @@ export function CreditUsageDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">Credit Usage Dashboard</h1>
           <p className="text-muted-foreground">Track your credit consumption across messages and reports</p>
         </div>
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Loading usage data...</p>
+        <div className="flex items-center justify-center py-12 h-[calc(100vh-200px)]">
+          <Spinner />
         </div>
       </div>
     )
@@ -61,7 +83,7 @@ export function CreditUsageDashboard() {
 
   const totalCredits = usageData.reduce((sum: number, item) => sum + item.credits_used, 0)
   const avgCredits = totalCredits / usageData.length
-
+  
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="space-y-1">
@@ -73,7 +95,7 @@ export function CreditUsageDashboard() {
         <Card>
           <CardHeader>
             <CardDescription>Total Credits Used</CardDescription>
-            <CardTitle className="text-2xl">{totalCredits.toFixed(1)}</CardTitle>
+            <CardTitle className="text-2xl">{totalCredits.toFixed(2)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -84,8 +106,8 @@ export function CreditUsageDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Average Credits/Message</CardDescription>
-            <CardTitle className="text-2xl">{avgCredits.toFixed(1)}</CardTitle>
+            <CardDescription>Average Credits per Message</CardDescription>
+            <CardTitle className="text-2xl">{avgCredits.toFixed(2)}</CardTitle>
           </CardHeader>
         </Card>
       </div>
